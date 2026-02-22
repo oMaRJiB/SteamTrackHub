@@ -5,7 +5,7 @@ def get_db_connection():
     return mysql.connector.connect(
         host='localhost',
         user='root',              # Change if your MySQL user is different
-        password='H1rrison1029!',  # ← Put your actual MySQL root password
+        password='A1ysia01081978$',  # ← Put your actual MySQL root password
         database='steamtrack_hub'
     )
 
