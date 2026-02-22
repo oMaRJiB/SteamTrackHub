@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Game - SteamTrack Hub</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 40px; }
+        .container { max-width: 500px; margin: auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #333; }
+        label { display: block; margin: 15px 0 5px; font-weight: bold; }
+        input, textarea { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #218838; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Add a Game to Your Library</h1>
+        
+        <form method="POST">
+            <label for="title">Game Title</label>
+            <input type="text" id="title" name="title" required placeholder="e.g., Elden Ring">
+
+            <label for="genre">Genre</label>
+            <input type="text" id="genre" name="genre" placeholder="e.g., Action RPG">
+
+            <label for="release_year">Release Year</label>
+            <input type="number" id="release_year" name="release_year" placeholder="e.g., 2022">
+
+            <label for="summary">Summary (optional)</label>
+            <textarea id="summary" name="summary" rows="4" placeholder="Brief description of the game..."></textarea>
+
+            <button type="submit">Add Game</button>
+        </form>
+
+        <p style="text-align: center; margin-top: 20px;">
+            <a href="/dashboard">Back to Dashboard</a>
+        </p>
+    </div>
+
+</body>
+</html>
