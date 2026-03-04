@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Connect Steam Account - SteamTrack Hub</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 40px; text-align: center; }
+        .container { max-width: 500px; margin: auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #1b2838; }
+        input { width: 100%; padding: 12px; margin: 15px 0; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: #1b2838; color: white; padding: 12px 30px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #171d25; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Connect Your Steam Account</h1>
+        <p>Enter your Steam ID (found in your Steam profile URL, e.g., https://steamcommunity.com/id/YOURID or numeric ID).</p>
+        <p>Your profile must be public for this to work.</p>
+
+        <form method="POST">
+            <input type="text" name="steam_id" placeholder="Your Steam ID" required>
+            <button type="submit">Connect & Import Games</button>
+        </form>
+
+        <p><a href="/dashboard">← Back to Dashboard</a></p>
+    </div>
+</body>
+</html>

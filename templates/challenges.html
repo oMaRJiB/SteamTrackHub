@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Challenges - SteamTrack Hub</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f8f9fa; padding: 40px; margin: 0; }
+        h1 { color: #006400; text-align: center; }
+        .challenge-card { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .challenge-card h3 { margin-top: 0; color: #2c3e50; }
+        .reward { color: #27ae60; font-weight: bold; }
+        button { background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #2980b9; }
+    </style>
+</head>
+<body>
+    <h1>Active Challenges</h1>
+    <p style="text-align: center;">
+        <a href="/dashboard">← Back to Dashboard</a>
+    </p>
+
+    {% for c in challenges %}
+<div class="challenge-card">
+    <h3>{{ c.name }}</h3>
+    <p>{{ c.description }}</p>
+    <p>Ends: {{ c.end_date }}</p>
+    <p class="reward">Reward: {{ c.reward_points }} points</p>
+
+    <!-- FORM MUST BE COMPLETE AND CORRECT -->
+    <form method="POST" action="{{ url_for('handle_join_challenge', challenge_id=c['challenge_id']) }}">
+        <button type="submit">Join Challenge</button>
+    </form>
+</div>
+{% endfor %}
+
+{% if not challenges %}
+<p style="text-align: center; font-size: 18px;">No active challenges right now.</p>
+{% endif %}
+</body>
+</html>

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Challenges - SteamTrack Hub</title>
+    <style>
+        body { font-family: Arial; background: #f4f4f4; padding: 40px; }
+        h1 { color: #006400; }
+        .challenge { background: white; padding: 15px; margin: 15px 0; border-radius: 8px; }
+        .completed { background: #d4edda; color: #155724; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>My Joined Challenges</h1>
+    <a href="/dashboard">← Back to Dashboard</a>
+
+    {% for j in joined %}
+    <div class="challenge {% if j.progress >= j.goal %}completed{% endif %}">
+        <h3>{{ j.name }}</h3>
+        <p>{{ j.description }}</p>
+        <p>Ends: {{ j.end_date }}</p>
+        <p>Progress: {{ j.progress }} / {{ j.goal }}</p>
+        {% if j.progress >= j.goal %}
+        <p class="completed">Completed! You earned {{ j.reward_points }} points.</p>
+        {% endif %}
+    </div>
+    {% endfor %}
+
+    {% if not joined %}
+    <p>You haven't joined any challenges yet. <a href="/challenges">Browse now!</a></p>
+    {% endif %}
+</body>
+</html>

@@ -1,6 +1,9 @@
 from flask import Flask, render_template, request, session, redirect, url_for
-from database import register_user, login_user
+from database import register_user, login_user, get_pending_reviews, moderate_review, get_user_library, join_challenge
 from database import get_db_connection
+import requests
+import os
+from database import insert_review
 
 
 app = Flask(__name__)
@@ -91,6 +94,270 @@ def add_game():
 def logout():
     session.clear()
     return redirect(url_for('login'))
+
+# ==================== FIXED ROUTES FOR THE 3 MISSING LINKS ====================
+
+@app.route('/library')
+def library():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    # Fetch user's games (placeholder - returns empty list if function missing)
+    games = get_user_library(session['user_id'])
+    
+    return render_template('library.html', games=games)
+
+
+@app.route('/challenges')
+def challenges():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    # Placeholder active challenges (replace with DB query later)
+    active_challenges = [
+    {"challenge_id": 1, "name": "100 Hours Challenge", "description": "Play 100 hours this month", "end_date": "2026-03-31", "reward_points": 200},
+    {"challenge_id": 2, "name": "Complete 5 Games", "description": "Finish 5 games before end of month", "end_date": "2026-04-30", "reward_points": 150}
+]
+    
+    return render_template('challenges.html', challenges=active_challenges)
+
+
+@app.route('/leaderboard')
+def leaderboard():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    # Placeholder leaderboard (replace with DB query later)
+    board = [
+        {"username": "player1", "points": 1500},
+        {"username": "gamerX", "points": 1200},
+        {"username": "you", "points": 800}
+    ]
+    
+    return render_template('leaderboard.html', leaderboard=board)
+
+
+@app.route('/moderate_reviews')
+def moderate_reviews():
+    if 'user_id' not in session or session.get('role') != 'admin':
+        return "Access Denied - Admin only", 403
+    
+    reviews = get_pending_reviews()
+    return render_template('moderate_reviews.html', reviews=reviews)
+
+
+@app.route('/moderate_review/<int:review_id>', methods=['POST'])
+def moderate_review_action(review_id):
+    if 'user_id' not in session or session.get('role') != 'admin':
+        return "Access Denied", 403
+    
+    action = request.form.get('action')
+    approve = action == 'approve'
+    moderate_review(review_id, approve)
+    return redirect(url_for('moderate_reviews'))
+
+# Steam API Key - put your real key here (never commit to GitHub!)
+STEAM_API_KEY = "3F062E133929F151C765B85BC031ECC3"  # ← replace with your key
+
+@app.route('/connect_steam', methods=['GET', 'POST'])
+def connect_steam():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        steam_id = request.form.get('steam_id')
+        if not steam_id:
+            return "Please enter a Steam ID", 400
+
+        # Fetch owned games via Steam API
+        url = f"http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={STEAM_API_KEY}&steamid={steam_id}&format=json&include_appinfo=1"
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+
+            data = response.json()
+            if 'response' not in data or 'games' not in data['response']:
+                return f"Steam API error: No games found or profile is private. Response: {data}", 400
+
+            games = data['response']['games']
+            conn = get_db_connection()
+            cursor = conn.cursor()
+
+            added_count = 0
+            duplicate_count = 0
+
+            for game in games:
+                appid = game['appid']
+                title = game.get('name', f"Game {appid}")
+
+                # Step 1: Check if game already exists in Games table (by title - simple uniqueness)
+                cursor.execute("SELECT game_id FROM Games WHERE title = %s", (title,))
+                existing_game = cursor.fetchone()
+
+                if existing_game:
+                    game_id = existing_game[0]
+                else:
+                    cursor.execute(
+                        "INSERT INTO Games (title) VALUES (%s)",
+                        (title,)
+                    )
+                    game_id = cursor.lastrowid
+
+                # Step 2: Add to User_Games only if not already present (use INSERT IGNORE)
+                cursor.execute(
+                    "INSERT IGNORE INTO User_Games (user_id, game_id, status) "
+                    "VALUES (%s, %s, 'planned')",
+                    (session['user_id'], game_id)
+                )
+                if cursor.rowcount == 1:
+                    added_count += 1
+                else:
+                    duplicate_count += 1
+
+            conn.commit()
+            cursor.close()
+            conn.close()
+
+            message = f"Imported {added_count} new games from Steam! ({duplicate_count} were already in your library.)"
+            return message
+
+        except Exception as e:
+            return f"Error connecting to Steam API: {str(e)}", 500
+
+    return render_template('connect_steam.html')
+
+@app.route('/update_game/<int:user_game_id>', methods=['GET', 'POST'])
+def update_game(user_game_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT ug.*, g.title 
+        FROM User_Games ug 
+        JOIN Games g ON ug.game_id = g.game_id 
+        WHERE ug.user_game_id = %s AND ug.user_id = %s
+    """, (user_game_id, session['user_id']))
+    game = cursor.fetchone()
+    cursor.close()
+    conn.close()
+
+    if not game:
+        return "Game not found or not in your library", 404
+
+    if request.method == 'POST':
+        status = request.form.get('status', game['status'])  # Fallback to current if missing
+        hours_played = request.form.get('hours_played')
+        notes = request.form.get('notes')
+
+        hours_played = int(hours_played) if hours_played and hours_played.isdigit() else game['hours_played']
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE User_Games 
+            SET status = %s, hours_played = %s, notes = %s 
+            WHERE user_game_id = %s AND user_id = %s
+        """, (status, hours_played, notes, user_game_id, session['user_id']))
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return redirect(url_for('library'))
+
+    return render_template('update_game.html', game=game)
+
+@app.route('/join_challenge/<int:challenge_id>', methods=['POST'])
+def handle_join_challenge(challenge_id):        # ← Changed name
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    try:
+        join_challenge(session['user_id'], challenge_id)   # ← This now calls the DB function
+        return redirect(url_for('challenges'))
+    except Exception as e:
+        return f"Error joining challenge: {str(e)}", 500
+    
+@app.route('/my_challenges')
+def my_challenges():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT c.name, c.description, c.end_date, uc.progress, c.goal, c.reward_points
+        FROM User_Challenges uc
+        JOIN Challenges c ON uc.challenge_id = c.challenge_id
+        WHERE uc.user_id = %s
+    """, (session['user_id'],))
+    joined = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    
+    return render_template('my_challenges.html', joined=joined)
+
+# Use Case 4: Write Review
+@app.route('/write_review/<int:game_id>', methods=['GET', 'POST'])
+def write_review(game_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    # Optional: Check if user owns the game (pre-condition)
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT 1 FROM User_Games WHERE user_id = %s AND game_id = %s", (session['user_id'], game_id))
+    owns_game = cursor.fetchone()
+    cursor.close()
+    conn.close()
+
+    if not owns_game:
+        return "You can only review games in your library.", 403
+
+    if request.method == 'POST':
+        review_text = request.form['review_text']
+        score = request.form.get('score')
+        if not score or not score.isdigit() or not 1 <= int(score) <= 10:
+            return "Score must be between 1 and 10.", 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO Reviews (user_id, game_id, review_text, score, approved) VALUES (%s, %s, %s, %s, 0)",
+            (session['user_id'], game_id, review_text, int(score))
+        )
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return redirect(url_for('library'))
+
+    return render_template('write_review.html', game_id=game_id)
+
+
+# View Other People's Reviews (approved only)
+@app.route('/reviews/<int:game_id>')
+def game_reviews(game_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT r.review_text, r.score, r.created_at, u.username
+        FROM Reviews r
+        JOIN Users u ON r.user_id = u.user_id
+        WHERE r.game_id = %s AND r.approved = 1
+        ORDER BY r.created_at DESC
+    """, (game_id,))
+    reviews = cursor.fetchall()
+    cursor.execute("SELECT title FROM Games WHERE game_id = %s", (game_id,))
+    game = cursor.fetchone()
+    cursor.close()
+    conn.close()
+
+    if not game:
+        return "Game not found", 404
+
+    return render_template('reviews.html', reviews=reviews, game_title=game['title'], game_id=game_id)
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Moderate Reviews - Admin</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f8f9fa; padding: 40px; margin: 0; }
+        h1 { color: #006400; text-align: center; }
+        .review-card { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .review-card h4 { margin: 0 0 10px; color: #2c3e50; }
+        .actions button { margin-right: 10px; padding: 8px 16px; cursor: pointer; }
+        .approve { background: #28a745; color: white; border: none; }
+        .delete { background: #dc3545; color: white; border: none; }
+        .no-reviews { text-align: center; font-size: 18px; color: #6c757d; }
+    </style>
+</head>
+<body>
+    <h1>Pending Reviews (Admin Moderation)</h1>
+    <p style="text-align: center;">
+        <a href="/dashboard">← Back to Dashboard</a>
+    </p>
+
+    {% if reviews %}
+        {% for r in reviews %}
+        <div class="review-card">
+            <h4>{{ r.username }} on "{{ r.title }}" (Score: {{ r.score }})</h4>
+            <p>"{{ r.review_text }}"</p>
+            <p>Submitted: {{ r.created_at }}</p>
+            <div class="actions">
+                <form method="POST" action="/moderate_review/{{ r.review_id }}" style="display:inline;">
+                    <button type="submit" name="action" value="approve" class="approve">Approve</button>
+                    <button type="submit" name="action" value="delete" class="delete">Delete</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p class="no-reviews">No pending reviews to moderate right now.</p>
+    {% endif %}
+</body>
+</html>

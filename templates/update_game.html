@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Update Game Status - SteamTrack Hub</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f8f9fa; padding: 40px; margin: 0; }
+        h1 { color: #006400; text-align: center; }
+        form { max-width: 500px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        label { display: block; margin: 15px 0 5px; font-weight: bold; }
+        select, input, textarea { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #218838; }
+        .back { text-align: center; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Update Status for {{ game.title }}</h1>
+
+    <form method="POST">
+        <label for="status">Current Status</label>
+        <select name="status" id="status">
+            <option value="planned" {% if game.status == 'planned' %}selected{% endif %}>Planned</option>
+            <option value="playing" {% if game.status == 'playing' %}selected{% endif %}>Playing</option>
+            <option value="completed" {% if game.status == 'completed' %}selected{% endif %}>Completed</option>
+            <option value="dropped" {% if game.status == 'dropped' %}selected{% endif %}>Dropped</option>
+        </select>
+
+        <label for="hours_played">Hours Played</label>
+        <input type="number" name="hours_played" id="hours_played" min="0" value="{{ game.hours_played or 0 }}">
+
+        <label for="notes">Notes</label>
+        <textarea name="notes" id="notes" rows="4">{{ game.notes or '' }}</textarea>
+
+        <button type="submit">Save Changes</button>
+    </form>
+
+    <div class="back">
+        <a href="/library">← Back to Library</a>
+    </div>
+</body>
+</html>

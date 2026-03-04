@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Leaderboard - SteamTrack Hub</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f8f9fa; padding: 40px; margin: 0; }
+        h1 { color: #006400; text-align: center; }
+        table { width: 60%; margin: 30px auto; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
+        th { background: #e9ecef; }
+        .rank-1 { background: gold; color: #333; font-weight: bold; }
+        .rank-2 { background: silver; }
+        .rank-3 { background: #cd7f32; }
+    </style>
+</head>
+<body>
+    <h1>Global Leaderboard</h1>
+    <p style="text-align: center;">
+        <a href="/dashboard">← Back to Dashboard</a>
+    </p>
+
+    {% if leaderboard %}
+    <table>
+        <tr>
+            <th>Rank</th>
+            <th>Player</th>
+            <th>Points</th>
+        </tr>
+        {% for player in leaderboard %}
+        <tr class="{% if loop.index == 1 %}rank-1{% elif loop.index == 2 %}rank-2{% elif loop.index == 3 %}rank-3{% endif %}">
+            <td>#{{ loop.index }}</td>
+            <td>{{ player.username }}</td>
+            <td>{{ player.points }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+    <p style="text-align: center; font-size: 18px;">
+        No players on the leaderboard yet. Earn points to climb the ranks!
+    </p>
+    {% endif %}
+</body>
+</html>
