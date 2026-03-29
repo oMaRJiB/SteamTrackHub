@@ -1,5 +1,6 @@
 import mysql.connector
 from werkzeug.security import generate_password_hash, check_password_hash
+from mysql.connector import errorcode
 
 def get_db_connection():
     return mysql.connector.connect(
@@ -10,10 +11,6 @@ def get_db_connection():
     )
 
 from werkzeug.security import generate_password_hash, check_password_hash
-
-import mysql.connector
-from werkzeug.security import generate_password_hash, check_password_hash
-from mysql.connector import errorcode
 
 def register_user(username, email, password, role='user'):
     conn = get_db_connection()
