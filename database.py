@@ -1,6 +1,7 @@
 import mysql.connector
 from werkzeug.security import generate_password_hash, check_password_hash
 from mysql.connector import errorcode
+from mysql.connector import errorcode
 
 def get_db_connection():
     return mysql.connector.connect(
@@ -9,8 +10,6 @@ def get_db_connection():
         password='H1rrison1029!',  # ← Put your actual MySQL root password
         database='steamtrack_hub'
     )
-
-from werkzeug.security import generate_password_hash, check_password_hash
 
 def register_user(username, email, password, role='user'):
     conn = get_db_connection()
